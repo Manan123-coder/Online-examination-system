@@ -1,0 +1,10 @@
+# Prometheus visits each service's /metrics page every 15 seconds and stores the numbers.
+global:
+  scrape_interval: 15s
+scrape_configs:
+  - job_name: student-service
+    static_configs: [{ targets: ["student-service:8001"] }]
+  - job_name: question-service
+    static_configs: [{ targets: ["question-service:8002"] }]
+  - job_name: result-service
+    static_configs: [{ targets: ["result-service:8003"] }]

@@ -1,0 +1,54 @@
+# Docker Compose starts all containers with ONE command:  docker compose up --build
+# VERSION decides the image tag, e.g. student-service:1.0  (set it in .env or in the terminal)
+services:
+  student-service:
+    build:
+      context: ./student-service
+      args: { APP_VERSION: "${VERSION:-1.0}" }
+    image: student-service:${VERSION:-1.0}
+    ports: ["8001:8001"]
+    environment:
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-change-me}
+    volumes: ["student-data:/data"]
+
+  question-service:
+    build:
+      context: ./question-service
+      args: { APP_VERSION: "${VERSION:-1.0}" }
+    image: question-service:${VERSION:-1.0}
+    ports: ["8002:8002"]
+    volumes: ["question-data:/data"]
+
+  result-service:
+    build:
+      context: ./result-service
+      args: { APP_VERSION: "${VERSION:-1.0}" }
+    image: result-service:${VERSION:-1.0}
+    ports: ["8003:8003"]
+    environment:
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-change-me}
+      QUESTION_SERVICE_URL: http://question-service:8002   # service name = hostname
+    volumes: ["result-data:/data"]
+    depends_on: [question-service]
+
+  frontend:
+    build: ./frontend
+    image: frontend:${VERSION:-1.0}
+    ports: ["3000:80"]          # open http://localhost:3000
+    depends_on: [student-service, question-service, result-service]
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    ports: ["9090:9090"]
+    volumes: ["./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro"]
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    ports: ["3001:3000"]        # open http://localhost:3001  (login admin / admin)
+    volumes: ["./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro"]
+    depends_on: [prometheus]
+
+volumes:
+  student-data:
+  question-data:
+  result-data:

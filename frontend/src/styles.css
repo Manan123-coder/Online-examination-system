@@ -1,0 +1,25 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Arial, sans-serif; background: #f0f4f8; color: #1a202c; }
+.nav { display: flex; justify-content: space-between; background: #2b6cb0; color: #fff; padding: 14px 24px; }
+.nav a { color: #fff; margin-left: 18px; text-decoration: none; }
+.container { max-width: 760px; margin: 24px auto; padding: 0 16px; }
+.card { background: #fff; border-radius: 10px; padding: 20px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+.auth { max-width: 380px; margin: 60px auto; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.center { text-align: center; }
+.big { font-size: 22px; font-weight: bold; }
+input:not([type=radio]) { display: block; width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #cbd5e0; border-radius: 6px; }
+button { background: #2b6cb0; color: #fff; border: 0; padding: 10px 18px; border-radius: 6px; cursor: pointer; }
+button:disabled { background: #a0aec0; cursor: not-allowed; }
+.error { color: #c53030; }
+.timer { color: #c05621; }
+.option { display: block; padding: 12px; margin: 8px 0; border: 1px solid #cbd5e0; border-radius: 6px; cursor: pointer; }
+.option input { margin-right: 10px; }
+.option.selected { background: #ebf8ff; border-color: #2b6cb0; }
+.nums { margin: 16px 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.nums button { background: #e2e8f0; color: #1a202c; padding: 6px 11px; }
+.nums button.done { background: #9ae6b4; }
+.nums button.cur { outline: 2px solid #2b6cb0; }
+.submit { background: #2f855a; width: 100%; margin-top: 8px; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0; }

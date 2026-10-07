@@ -1,0 +1,39 @@
+# Deployment = "keep N copies (pods) of this container running". Service = stable address for the pods.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: question-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: question-service
+  template:
+    metadata:
+      labels:
+        app: question-service
+    spec:
+      containers:
+      - name: question-service
+        image: question-service:1.0
+        imagePullPolicy: Never      # use the image built inside Minikube (no registry)
+        ports:
+        - containerPort: 8002
+        readinessProbe:             # Kubernetes only sends traffic when /health answers
+          httpGet:
+            path: /health
+            port: 8002
+        env:
+        - name: APP_VERSION
+          value: "1.0"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: question-service                          # this name becomes the DNS hostname
+spec:
+  selector:
+    app: question-service
+  ports:
+  - port: 8002
+    targetPort: 8002
