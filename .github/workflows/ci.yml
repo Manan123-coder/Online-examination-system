@@ -1,0 +1,89 @@
+name: CI/CD Pipeline
+
+on: [push]
+
+env:
+  VERSION: 1.${{ github.run_number }}      
+
+jobs:
+  # ---- Job 1: testing, security, Docker ----
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-dev.txt
+          for s in student-service question-service result-service; do
+            pip install -r $s/requirements.txt
+          done
+
+      - name: Security check (bandit + pip-audit)
+        run: |
+          for s in student-service question-service result-service; do
+            (cd $s && bandit -r . -x ./tests,./venv)
+            (cd $s && pip-audit -r requirements.txt --ignore-vuln PYSEC-2025-183)
+          done
+
+      - name: Automated tests (pytest)
+        run: |
+          for s in student-service question-service result-service; do
+            (cd $s && pytest)
+          done
+
+      - name: Build Docker images
+        run: docker compose build
+
+      - name: Start containers and check health
+        run: |
+          docker compose up -d
+          sleep 30
+          curl -f http://localhost:8001/health
+          curl -f http://localhost:8002/health
+          curl -f http://localhost:8003/health
+          docker compose down
+
+  #Job 2: Kubernetes deploy + rollback (temporary Minikube)
+  kubernetes:
+    needs: test-and-build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: medyagh/setup-minikube@latest
+
+      - name: Build images inside Minikube
+        run: |
+          eval $(minikube docker-env)
+          for s in student-service question-service result-service; do
+            docker build -t $s:1.0 ./$s
+            docker build -t $s:$VERSION ./$s
+          done
+          docker build -t frontend:1.0 ./frontend
+
+      - name: Deploy version 1.0
+        run: |
+          kubectl create secret generic jwt-secret --from-literal=SECRET_KEY=ci-demo-secret-key-at-least-32-bytes-long
+          kubectl apply -f k8s/
+          for d in student-service question-service result-service frontend; do
+            kubectl rollout status deployment/$d --timeout=180s
+          done
+          kubectl get pods
+
+      - name: Upgrade student-service to the new version
+        run: |
+          kubectl set image deployment/student-service student-service=student-service:$VERSION
+          kubectl rollout status deployment/student-service --timeout=180s
+          kubectl rollout history deployment/student-service
+
+      - name: Rollback demo (bad version 9.9)
+        run: |
+          kubectl set image deployment/student-service student-service=student-service:9.9
+          sleep 20
+          kubectl get pods
+          kubectl rollout undo deployment/student-service
+          kubectl rollout status deployment/student-service --timeout=180s
+          kubectl get pods
